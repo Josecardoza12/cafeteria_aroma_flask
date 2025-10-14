@@ -1,0 +1,23 @@
+/* Estilo liviano + toques cálidos tipo cafetería */
+body { background: #fffaf3; }
+.navbar-brand { font-weight: 800; letter-spacing: .5px; }
+.hero {
+  background: linear-gradient(135deg, #f7e7ce 0%, #fff3d9 100%);
+  border-radius: 1rem;
+  padding: 3rem 1.5rem;
+  box-shadow: 0 10px 30px rgba(0,0,0,.08);
+}
+.card {
+  border: none;
+  border-radius: 1rem;
+  box-shadow: 0 10px 20px rgba(0,0,0,.06);
+}
+.badge-soft {
+  background: rgba(0,0,0,.06);
+  border-radius: .75rem;
+  padding: .35rem .6rem;
+  font-weight: 500;
+}
+footer {
+  border-top: 1px dashed rgba(0,0,0,.1);
+}

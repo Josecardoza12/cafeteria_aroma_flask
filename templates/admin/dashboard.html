@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+  <h3>Dashboard</h3>
+  <div class="row g-3">
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <div class="fw-bold">Ventas</div>
+        <div class="display-6">${{ '%.0f'|format(total_sales) }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <div class="fw-bold">Pedidos</div>
+        <div class="display-6">{{ total_orders }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <div class="fw-bold">Productos</div>
+        <div class="display-6">{{ products_count }}</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card text-center p-3">
+        <div class="fw-bold">Usuarios</div>
+        <div class="display-6">{{ users_count }}</div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

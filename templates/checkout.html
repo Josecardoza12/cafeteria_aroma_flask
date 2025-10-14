@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+  <h3>Confirmar compra</h3>
+  {% if not items %}
+    <p>Tu carrito está vacío.</p>
+  {% else %}
+  <div class="row g-3">
+    <div class="col-md-8">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Resumen</h5>
+          <ul class="list-group list-group-flush">
+            {% for it in items %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{{ it.product.name }} x {{ it.qty }}</span>
+              <span>${{ '%.0f'|format(it.line_total) }}</span>
+            </li>
+            {% endfor %}
+            <li class="list-group-item d-flex justify-content-between">
+              <strong>Total</strong>
+              <strong>${{ '%.0f'|format(total) }}</strong>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card">
+        <div class="card-body">
+          <h5 class="card-title">Pago</h5>
+          <form method="post">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-3">
+              <label class="form-label">Método</label>
+              <select class="form-select" name="payment_method">
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta</option>
+              </select>
+            </div>
+            <button class="btn btn-dark w-100">Realizar pedido</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+{% endblock %}

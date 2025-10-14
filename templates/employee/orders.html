@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+  <h3>Pedidos en sala</h3>
+  <div class="table-responsive">
+    <table class="table align-middle">
+      <thead>
+        <tr><th>ID</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th>Total</th><th>Acciones</th></tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+        <tr>
+          <td>#{{ o.id }}</td>
+          <td>{{ o.user.name if o.user else '—' }}</td>
+          <td>{{ o.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+          <td><span class="badge text-bg-dark">{{ o.status|capitalize }}</span></td>
+          <td>${{ '%.0f'|format(o.total) }}</td>
+          <td>
+            <div class="btn-group">
+              <form method="post" action="{{ url_for('employee_advance', order_id=o.id) }}">
+                <button class="btn btn-sm btn-outline-dark" {% if o.status in ['entregado','cancelado'] %}disabled{% endif %}>Avanzar</button>
+              </form>
+              <form method="post" action="{{ url_for('employee_cancel', order_id=o.id) }}" onsubmit="return confirm('¿Cancelar pedido?')">
+                <button class="btn btn-sm btn-outline-danger" {% if o.status in ['entregado','cancelado'] %}disabled{% endif %}>Cancelar</button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

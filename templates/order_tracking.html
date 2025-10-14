@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+  <h3>Pedido #{{ order.id }}</h3>
+  <p class="text-muted">Estado: <span class="badge text-bg-dark">{{ order.status|capitalize }}</span></p>
+  <ul class="list-group mb-3">
+    {% for it in order.items %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <span>{{ it.product.name }} x {{ it.quantity }}</span>
+        <strong>${{ '%.0f'|format(it.quantity * it.unit_price) }}</strong>
+      </li>
+    {% endfor %}
+    <li class="list-group-item d-flex justify-content-between">
+      <strong>Total</strong>
+      <strong>${{ '%.0f'|format(order.total) }}</strong>
+    </li>
+  </ul>
+  <a class="btn btn-outline-dark" href="{{ url_for('menu') }}">Seguir comprando</a>
+{% endblock %}

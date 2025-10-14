@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="d-flex align-items-center mb-3">
+    <h3 class="me-auto">Productos</h3>
+    <a class="btn btn-dark" href="{{ url_for('admin_product_new') }}"><i class="bi bi-plus-circle"></i> Nuevo</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead><tr><th>ID</th><th>Nombre</th><th>Precio</th><th>Stock</th><th>Activo</th><th></th></tr></thead>
+      <tbody>
+      {% for p in products %}
+        <tr>
+          <td>{{ p.id }}</td>
+          <td>{{ p.name }}</td>
+          <td>${{ '%.0f'|format(p.price) }}</td>
+          <td>{{ p.stock }}</td>
+          <td>{{ 'Sí' if p.is_active else 'No' }}</td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-dark" href="{{ url_for('admin_product_edit', product_id=p.id) }}"><i class="bi bi-pencil"></i></a>
+            <form class="d-inline" method="post" action="{{ url_for('admin_product_delete', product_id=p.id) }}" onsubmit="return confirm('¿Eliminar producto?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}
