@@ -1,31 +1,33 @@
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify, abort
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect , generate_csrf
 from models import db, User, Product, Category, Order, OrderItem, Role
 from forms import LoginForm, RegisterForm, ProductForm, CategoryForm
 from utils import role_required
 
+csrf = CSRFProtect()
+login_manager = LoginManager()
+login_manager.login_view = "login"
+
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'clave-super-secreta-123'
-
     app.config.from_object("config.Config")
 
-    # Init extensions
+    # 🔹 Inicializar las extensiones aquí
     db.init_app(app)
-    csrf = CSRFProtect(app)
-
-    login_manager = LoginManager(app)
-    login_manager.login_view = "login"
+    csrf.init_app(app)
+    login_manager.init_app(app)
 
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(User, int(user_id))
 
-    # Ensure DB exists
+    # 🔹 Asegurar que la BD exista
     with app.app_context():
         db.create_all()
+
 
     # Routes
     @app.route("/")

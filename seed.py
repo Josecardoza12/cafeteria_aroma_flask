@@ -40,8 +40,10 @@ with app.app_context():
             db.session.add(p)
 
     ensure_product("Café Americano", 1900, 20, bebidas,
-                   "https://images.unsplash.com/photo-1504754524776-8f4f37790ca0?q=80&w=800&auto=format&fit=crop",
-                   "Café negro intenso.")
+    "https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=800&auto=format&fit=crop",
+    "Café negro intenso."
+)
+
 
     ensure_product("Capuchino", 2400, 15, bebidas,
                    "https://images.unsplash.com/photo-1511920170033-f8396924c348?q=80&w=800&auto=format&fit=crop",
@@ -51,9 +53,11 @@ with app.app_context():
                    "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=800&auto=format&fit=crop",
                    "Muffin casero con chips de chocolate.")
 
-    ensure_product("Sandwich Jamón Queso", 2100, 18, salados,
-                   "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=800&auto=format&fit=crop",
-                   "Sandwich tostado clásico.")
+    ensure_product("Sandwich Jamón Queso",2100, 18, salados,
+                  "https://images.unsplash.com/photo-1606755962773-0e48ab944d2d?q=80&w=800&auto=format&fit=crop",
+                  "Sandwich tostado clásico de jamón y queso."
+)
+
 
     db.session.commit()
     print("Datos de ejemplo cargados.")
