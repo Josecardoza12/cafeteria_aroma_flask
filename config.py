@@ -1,21 +1,23 @@
+# config.py
 import os
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "clave-super-secreta-123")
-    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
+    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
 
-    # Obtener URL de la base de datos desde Render
-    uri = os.environ.get("DATABASE_URL")
+    # Lee DATABASE_URL del entorno (Render). Si no existe, usa SQLite local.
+    uri = os.environ.get("DATABASE_URL", f"sqlite:///{os.path.join(BASE_DIR, 'app.db')}")
 
-    if uri and uri.startswith("postgres://"):
+    # Render a veces entrega "postgres://..." -> SQLAlchemy requiere "postgresql+psycopg2://..."
+    if uri.startswith("postgres://"):
         uri = uri.replace("postgres://", "postgresql+psycopg2://", 1)
 
-    # Forzar sslmode=require si no existe
-    if uri and "sslmode" not in uri:
-        uri = uri + ("&sslmode=require" if "?" in uri else "?sslmode=require")
+    # Forzar SSL en producción si es Postgres y no viene seteado
+    if uri.startswith("postgresql") and "sslmode=" not in uri:
+        uri += ("&sslmode=require" if "?" in uri else "?sslmode=require")
 
-    SQLALCHEMY_DATABASE_URI = uri or f"sqlite:///{BASE_DIR / 'app.db'}"
+    SQLALCHEMY_DATABASE_URI = uri
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Evita cortes de conexión (“SSL SYSCALL EOF detected”)
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}

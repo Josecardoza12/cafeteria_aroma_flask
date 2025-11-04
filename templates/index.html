@@ -5,7 +5,9 @@
     <div class="col-lg-7">
       <h1 class="display-5 fw-bold">Bienvenido a <span class="text-decoration-underline">Cafetería Aroma</span></h1>
       <p class="lead">Tu pausa favorita con cafés, dulces y salados recién preparados.</p>
-      <a href="{{ url_for('menu') }}" class="btn btn-dark btn-lg"><i class="bi bi-shop"></i> Ver Menú</a>
+      <a href="{{ url_for('menu') }}" class="btn btn-dark btn-lg">
+        <i class="bi bi-shop"></i> Ver Menú
+      </a>
     </div>
     <div class="col-lg-5">
       <div class="card p-3">
@@ -25,14 +27,21 @@
 <div class="row g-3">
   {% for p in featured %}
     <div class="col-12 col-sm-6 col-md-4">
-      <div class="card h-100">
-        {% if p.image_url %}<img src="{{ p.image_url }}" class="card-img-top" alt="{{ p.name }}">{% endif %}
+      <div class="card h-100 shadow-sm">
+        {% if p.image_url %}
+          <img src="{{ url_for('static', filename='images/' + p.image_url) }}"
+               class="card-img-top"
+               alt="{{ p.name }}"
+               style="height: 200px; object-fit: cover;">
+        {% endif %}
         <div class="card-body d-flex flex-column">
           <h5 class="card-title">{{ p.name }}</h5>
           <p class="card-text text-muted small">{{ p.description or "" }}</p>
           <div class="mt-auto d-flex align-items-center justify-content-between">
             <span class="fw-bold">${{ '%.0f'|format(p.price) }}</span>
-            <button class="btn btn-outline-dark" onclick="addToCart({{ p.id }})"><i class="bi bi-bag-plus"></i> Agregar</button>
+            <button class="btn btn-outline-dark" onclick="addToCart({{ p.id }})">
+              <i class="bi bi-bag-plus"></i> Agregar
+            </button>
           </div>
         </div>
       </div>
