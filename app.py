@@ -234,6 +234,10 @@ def create_app():
         db.session.commit()
         flash(f"Pedido #{order.id} cancelado.", "info")
         return redirect(url_for("employee_orders"))
+    # --- Ruta temporal para evitar error en base.html ---
+    @app.route("/admin/dashboard")
+    def admin_dashboard():
+        return "Dashboard temporal (esta ruta fue eliminada)"
 
     return app
 
