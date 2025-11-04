@@ -6,6 +6,9 @@ from config import Config
 from models import db, User, Product, Category, Order, OrderItem, Role
 from forms import LoginForm, RegisterForm, ProductForm, CategoryForm
 from seed_data import seed_db
+from werkzeug.routing import BuildError
+from flask import url_for, render_template
+
 
 # --- Inicialización de extensiones ---
 csrf = CSRFProtect()
@@ -234,10 +237,46 @@ def create_app():
         db.session.commit()
         flash(f"Pedido #{order.id} cancelado.", "info")
         return redirect(url_for("employee_orders"))
-    # --- Ruta temporal para evitar error en base.html ---
-    @app.route("/admin/dashboard")
+    
+# --- Helpers seguros para plantillas ---
+    @app.template_global()
+    def safe_url_for(endpoint, **values):
+        """Evita 500 si el endpoint no existe: devuelve '#'."""
+        try:
+            return url_for(endpoint, **values)
+        except BuildError:
+            return '#'
+
+    @app.context_processor
+    def inject_has_endpoint():
+        """Permite preguntar en Jinja si un endpoint existe."""
+        return {"has_endpoint": lambda name: name in app.view_functions}
+
+# --- Endpoints mínimos de Admin (para que los links no rompan) ---
+    @app.get("/admin")
+    @login_required
     def admin_dashboard():
-        return "Dashboard temporal (esta ruta fue eliminada)"
+        # Si tienes plantilla: return render_template("admin/dashboard.html", ...)
+        return "Dashboard admin (mínimo; puedes reemplazar por tu template)."
+
+    @app.get("/admin/productos")
+    @login_required
+    def admin_products():
+        products = Product.query.order_by(Product.created_at.desc()).all()
+        # Si tienes templates/admin/products.html úsalo, si no, devolvemos texto simple
+        try:
+            return render_template("admin/products.html", products=products)
+        except Exception:
+            return "\n".join([f"{p.id} - {p.name} - ${p.price}" for p in products]) or "Sin productos"
+
+    @app.get("/admin/categorias")
+    @login_required
+    def admin_categories():
+        categories = Category.query.order_by(Category.name.asc()).all()
+        try:
+            return render_template("admin/categories.html", categories=categories)
+        except Exception:
+            return "\n".join([c.name for c in categories]) or "Sin categorías"
 
     return app
 

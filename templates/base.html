@@ -1,4 +1,3 @@
-{% set cart_count = session.get('cart', {})|map('int')|list|length and session.get('cart', {})|dictsort(false) %}
 <!doctype html>
 <html lang="es">
   <head>
@@ -17,24 +16,33 @@
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="nav">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item"><a class="nav-link" href="{{ url_for('menu') }}">Menú</a></li>
+
             {% if current_user.is_authenticated and (current_user.is_admin() or current_user.is_employee()) %}
               <li class="nav-item"><a class="nav-link" href="{{ url_for('employee_orders') }}">Pedidos</a></li>
             {% endif %}
+
             {% if current_user.is_authenticated and current_user.is_admin() %}
               <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown">Admin</a>
                 <ul class="dropdown-menu">
-<!-- <li><a class="dropdown-item" href="{{ url_for('admin_dashboard') }}">Dashboard</a></li> -->
-
-                  <li><a class="dropdown-item" href="{{ url_for('admin_products') }}">Productos</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('admin_categories') }}">Categorías</a></li>
+                  {% if has_endpoint('admin_dashboard') %}
+                    <li><a class="dropdown-item" href="{{ safe_url_for('admin_dashboard') }}">Dashboard</a></li>
+                  {% endif %}
+                  {% if has_endpoint('admin_products') %}
+                    <li><a class="dropdown-item" href="{{ safe_url_for('admin_products') }}">Productos</a></li>
+                  {% endif %}
+                  {% if has_endpoint('admin_categories') %}
+                    <li><a class="dropdown-item" href="{{ safe_url_for('admin_categories') }}">Categorías</a></li>
+                  {% endif %}
                 </ul>
               </li>
             {% endif %}
           </ul>
+
           <ul class="navbar-nav ms-auto">
             <li class="nav-item me-2">
               <a class="btn btn-outline-dark position-relative" href="{{ url_for('cart') }}">
@@ -44,15 +52,16 @@
                 </span>
               </a>
             </li>
+
             {% if current_user.is_authenticated %}
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown">
-                <i class="bi bi-person-circle"></i> {{ current_user.name }}
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="{{ url_for('logout') }}">Salir</a></li>
-              </ul>
-            </li>
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" role="button" data-bs-toggle="dropdown">
+                  <i class="bi bi-person-circle"></i> {{ current_user.name }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li><a class="dropdown-item" href="{{ url_for('logout') }}">Salir</a></li>
+                </ul>
+              </li>
             {% else %}
               <li class="nav-item"><a class="btn btn-dark" href="{{ url_for('login') }}">Ingresar</a></li>
             {% endif %}
