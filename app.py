@@ -256,8 +256,15 @@ def create_app():
     @app.get("/admin")
     @login_required
     def admin_dashboard():
-        # Si tienes plantilla: return render_template("admin/dashboard.html", ...)
-        return "Dashboard admin (mínimo; puedes reemplazar por tu template)."
+        total_sales = 0  # si aún no tenés ventas, ponelo en 0
+        total_orders = Order.query.count() if 'Order' in globals() else 0
+        products_count = Product.query.count()
+        users_count = User.query.count()
+        return render_template("admin/dashboard.html",
+                            total_sales=total_sales,
+                            total_orders=total_orders,
+                            products_count=products_count,
+                            users_count=users_count)
 
     
 
@@ -265,10 +272,43 @@ def create_app():
     @login_required
     def admin_categories():
         categories = Category.query.order_by(Category.name.asc()).all()
-        try:
-            return render_template("admin/categories.html", categories=categories)
-        except Exception:
-            return "\n".join([c.name for c in categories]) or "Sin categorías"
+        return render_template("admin/categories.html", categories=categories)
+    
+    @app.route("/admin/categorias/nueva", methods=["GET", "POST"])
+    @login_required
+    def admin_category_new():
+        form = CategoryForm()
+        if form.validate_on_submit():
+            c = Category(name=form.name.data.strip())
+            db.session.add(c)
+            db.session.commit()
+            flash("Categoría creada correctamente.", "success")
+            return redirect(url_for("admin_categories"))
+        return render_template("admin/category_form.html", form=form, action="Nueva")
+
+
+    @app.route("/admin/categorias/<int:category_id>/editar", methods=["GET", "POST"])
+    @login_required
+    def admin_category_edit(category_id):
+        c = Category.query.get_or_404(category_id)
+        form = CategoryForm(obj=c)
+        if form.validate_on_submit():
+            c.name = form.name.data.strip()
+            db.session.commit()
+            flash("Categoría actualizada.", "success")
+            return redirect(url_for("admin_categories"))
+        return render_template("admin/category_form.html", form=form, action="Editar")
+
+
+    @app.post("/admin/categorias/<int:category_id>/eliminar")
+    @login_required
+    def admin_category_delete(category_id):
+        c = Category.query.get_or_404(category_id)
+        db.session.delete(c)
+        db.session.commit()
+        flash("Categoría eliminada.", "info")
+        return redirect(url_for("admin_categories"))
+    
         # ------------------ ADMIN PRODUCTOS ------------------
 
     @app.route("/admin/productos")
