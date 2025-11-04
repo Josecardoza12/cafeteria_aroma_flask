@@ -5,6 +5,8 @@ from flask_wtf.csrf import CSRFProtect
 from models import db, User, Product, Category, Order, OrderItem, Role
 from forms import LoginForm, RegisterForm, ProductForm, CategoryForm
 from utils import role_required
+from seed_data import seed_db
+
 
 # Inicialización de extensiones
 csrf = CSRFProtect()
@@ -29,6 +31,8 @@ def create_app():
     # Crear tablas si no existen
     with app.app_context():
         db.create_all()
+        seed_db()
+        
 
     # -------------------- RUTAS --------------------
 

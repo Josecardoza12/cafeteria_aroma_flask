@@ -1,17 +1,16 @@
 import os
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+from pathlib import Path
 
-class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
+BASE_DIR = Path(__file__).resolve().parent
 
-    uri = os.environ.get("DATABASE_URL")
-    if uri and uri.startswith("postgres://"):
-        uri = uri.replace("postgres://", "postgresql+psycopg2://", 1)
+uri = os.environ.get("DATABASE_URL")
+if uri and uri.startswith("postgres://"):
+    uri = uri.replace("postgres://", "postgresql+psycopg2://", 1)
 
-    # Forzar SSL si se usa PostgreSQL (Render exige conexión cifrada)
-    if uri and "render.com" in uri:
-        if "?sslmode=require" not in uri:
-            uri += "?sslmode=require"
+# Forzar sslmode=require si no existe
+if uri and "sslmode" not in uri:
+    # si ya tiene ?, usamos &, si no, agregamos ?
+    uri = uri + ("&sslmode=require" if "?" in uri else "?sslmode=require")
 
-    SQLALCHEMY_DATABASE_URI = uri or f"sqlite:///{os.path.join(BASE_DIR, 'app.db')}"
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+SQLALCHEMY_DATABASE_URI = uri or f"sqlite:///{os.path.join(BASE_DIR, 'app.db')}"
+SQLALCHEMY_TRACK_MODIFICATIONS = False
