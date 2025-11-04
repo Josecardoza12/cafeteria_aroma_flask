@@ -209,6 +209,15 @@ def create_app():
         db.session.commit()
         flash(f"Pedido #{order.id} cancelado.", "info")
         return redirect(url_for("employee_orders"))
+    @app.route("/testdb")
+    def testdb():
+        from models import db
+        try:
+            db.session.execute("SELECT 1")
+            return "✅ Conexión exitosa con PostgreSQL"
+        except Exception as e:
+            return f"❌ Error: {e}"
+
 
     return app
 
