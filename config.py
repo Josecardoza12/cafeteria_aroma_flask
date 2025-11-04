@@ -5,6 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "clave-super-secreta-123")
+    SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True}
 
     # Obtener URL de la base de datos desde Render
     uri = os.environ.get("DATABASE_URL")

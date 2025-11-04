@@ -31,9 +31,12 @@ def create_app():
 
     # Crear tablas si no existen
     with app.app_context():
-        db.create_all()  # crea las tablas si no existen
-        seed_db()
-        
+        db.create_all()
+        try:
+            seed_db()
+        except Exception as e:
+            print("⚠️ No se pudo ejecutar seed_db:", e)
+            
 
     # -------------------- RUTAS --------------------
 
