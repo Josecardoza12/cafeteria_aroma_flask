@@ -32,7 +32,7 @@ def create_app():
     # Crear tablas si no existen
     with app.app_context():
         db.create_all()  # crea las tablas si no existen
-        seed_db(app)
+        seed_db()
         
 
     # -------------------- RUTAS --------------------
