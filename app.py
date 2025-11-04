@@ -259,15 +259,7 @@ def create_app():
         # Si tienes plantilla: return render_template("admin/dashboard.html", ...)
         return "Dashboard admin (mínimo; puedes reemplazar por tu template)."
 
-    @app.get("/admin/productos")
-    @login_required
-    def admin_products():
-        products = Product.query.order_by(Product.created_at.desc()).all()
-        # Si tienes templates/admin/products.html úsalo, si no, devolvemos texto simple
-        try:
-            return render_template("admin/products.html", products=products)
-        except Exception:
-            return "\n".join([f"{p.id} - {p.name} - ${p.price}" for p in products]) or "Sin productos"
+    
 
     @app.get("/admin/categorias")
     @login_required
@@ -277,6 +269,71 @@ def create_app():
             return render_template("admin/categories.html", categories=categories)
         except Exception:
             return "\n".join([c.name for c in categories]) or "Sin categorías"
+        # ------------------ ADMIN PRODUCTOS ------------------
+
+    @app.route("/admin/productos")
+    @login_required
+    def admin_products():
+        products = Product.query.order_by(Product.id.asc()).all()
+        return render_template("admin/products.html", products=products)
+
+    @app.route("/admin/productos/nuevo", methods=["GET", "POST"])
+    @login_required
+    def admin_product_new():
+        form = ProductForm()
+        if form.validate_on_submit():
+            p = Product(
+                name=form.name.data.strip(),
+                price=form.price.data,
+                stock=form.stock.data,
+                category_id=form.category_id.data,
+                is_active=form.is_active.data
+        )
+
+        # Imagen
+            if form.image_url.data:
+                p.image_url = form.image_url.data.filename
+                image_path = os.path.join(app.static_folder, "images", form.image_url.data.filename)
+                form.image_url.data.save(image_path)
+
+            db.session.add(p)
+            db.session.commit()
+            flash("Producto agregado correctamente.", "success")
+            return redirect(url_for("admin_products"))
+
+        return render_template("admin/product_form.html", form=form, action="Nuevo")
+
+    @app.route("/admin/productos/<int:product_id>/editar", methods=["GET", "POST"])
+    @login_required
+    def admin_product_edit(product_id):
+        p = db.session.get(Product, product_id)
+        if not p:
+            abort(404)
+        form = ProductForm(obj=p)
+
+        if form.validate_on_submit():
+            form.populate_obj(p)
+            if form.image_url.data:
+                p.image_url = form.image_url.data.filename
+                image_path = os.path.join(app.static_folder, "images", form.image_url.data.filename)
+                form.image_url.data.save(image_path)
+            db.session.commit()
+            flash("Producto actualizado.", "success")
+            return redirect(url_for("admin_products"))
+
+        return render_template("admin/product_form.html", form=form, action="Editar")
+
+    @app.post("/admin/productos/<int:product_id>/eliminar")
+    @login_required
+    def admin_product_delete(product_id):
+        p = db.session.get(Product, product_id)
+        if not p:
+            abort(404)
+        db.session.delete(p)
+        db.session.commit()
+        flash("Producto eliminado.", "info")
+        return redirect(url_for("admin_products"))
+
 
     return app
 
