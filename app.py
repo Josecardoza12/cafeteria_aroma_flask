@@ -1,21 +1,23 @@
 import os
 from flask import Flask, render_template, redirect, url_for, flash, request, session, jsonify, abort
 from flask_login import LoginManager, login_user, logout_user, current_user, login_required
-from flask_wtf.csrf import CSRFProtect , generate_csrf
+from flask_wtf.csrf import CSRFProtect
 from models import db, User, Product, Category, Order, OrderItem, Role
 from forms import LoginForm, RegisterForm, ProductForm, CategoryForm
 from utils import role_required
 
+# Inicialización de extensiones
 csrf = CSRFProtect()
 login_manager = LoginManager()
 login_manager.login_view = "login"
 
+
 def create_app():
     app = Flask(__name__)
-    app.config['SECRET_KEY'] = 'clave-super-secreta-123'
+    app.config['SECRET_KEY'] = os.environ.get("SECRET_KEY", "clave-super-secreta-123")
     app.config.from_object("config.Config")
 
-    # 🔹 Inicializar las extensiones aquí
+    # Inicializar extensiones
     db.init_app(app)
     csrf.init_app(app)
     login_manager.init_app(app)
@@ -24,12 +26,12 @@ def create_app():
     def load_user(user_id):
         return db.session.get(User, int(user_id))
 
-    # 🔹 Asegurar que la BD exista
+    # Crear tablas si no existen
     with app.app_context():
         db.create_all()
 
+    # -------------------- RUTAS --------------------
 
-    # Routes
     @app.route("/")
     def index():
         featured = Product.query.filter_by(is_active=True).limit(6).all()
@@ -46,7 +48,7 @@ def create_app():
         products = products_query.order_by(Product.name.asc()).all()
         return render_template("menu.html", products=products, categories=categories, selected=cat_id)
 
-    # ---------- Auth ----------
+    # ---------- Autenticación ----------
     @app.route("/login", methods=["GET", "POST"])
     def login():
         if current_user.is_authenticated:
@@ -57,8 +59,7 @@ def create_app():
             if user and user.check_password(form.password.data):
                 login_user(user)
                 flash(f"¡Bienvenido {user.name}!", "success")
-                next_page = request.args.get("next") or url_for("index")
-                return redirect(next_page)
+                return redirect(url_for("index"))
             flash("Credenciales inválidas", "danger")
         return render_template("auth/login.html", form=form)
 
@@ -86,7 +87,7 @@ def create_app():
         flash("Sesión cerrada.", "info")
         return redirect(url_for("index"))
 
-    # ---------- Cart ----------
+    # ---------- Carrito ----------
     def _get_cart():
         return session.setdefault("cart", {})
 
@@ -127,7 +128,7 @@ def create_app():
         session.modified = True
         return redirect(url_for("cart"))
 
-    # ---------- Checkout & Orders ----------
+    # ---------- Checkout & Pedidos ----------
     @app.route("/checkout", methods=["GET", "POST"])
     @login_required
     def checkout():
@@ -139,7 +140,6 @@ def create_app():
             payment_method = request.form.get("payment_method", "efectivo")
             order = Order(user_id=current_user.id, status="pendiente", payment_method=payment_method)
             total = 0.0
-            # Create items & update stock
             for pid, qty in cart.items():
                 product = db.session.get(Product, int(pid))
                 if not product or not product.is_active or product.stock < qty:
@@ -157,7 +157,6 @@ def create_app():
             flash("¡Pedido realizado! Puedes seguir su estado.", "success")
             return redirect(url_for("order_tracking", order_id=order.id))
 
-        # GET
         items = []
         total = 0.0
         for pid, qty in cart.items():
@@ -177,14 +176,13 @@ def create_app():
             abort(404)
         return render_template("order_tracking.html", order=order)
 
-    # ---------- Employee panel ----------
+    # ---------- Panel Empleado ----------
     @app.get("/empleado/pedidos")
     @login_required
     @role_required(Role.EMPLOYEE, Role.ADMIN)
     def employee_orders():
-        status = request.args.get("status", "pendiente")
         orders = Order.query.filter(Order.status != "cancelado").order_by(Order.created_at.asc()).all()
-        return render_template("employee/orders.html", orders=orders, selected=status)
+        return render_template("employee/orders.html", orders=orders)
 
     @app.post("/empleado/pedidos/<int:order_id>/avanzar")
     @login_required
@@ -193,11 +191,7 @@ def create_app():
         order = db.session.get(Order, order_id)
         if not order:
             abort(404)
-        next_map = {
-            "pendiente": "preparando",
-            "preparando": "listo",
-            "listo": "entregado"
-        }
+        next_map = {"pendiente": "preparando", "preparando": "listo", "listo": "entregado"}
         order.status = next_map.get(order.status, order.status)
         db.session.commit()
         return redirect(url_for("employee_orders"))
@@ -210,149 +204,18 @@ def create_app():
         if not order:
             abort(404)
         order.status = "cancelado"
-        # return stock
         for it in order.items:
             it.product.stock += it.quantity
         db.session.commit()
         flash(f"Pedido #{order.id} cancelado.", "info")
         return redirect(url_for("employee_orders"))
 
-    # ---------- Admin ----------
-    @app.get("/admin")
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_dashboard():
-        total_orders = Order.query.count()
-        total_sales = db.session.query(db.func.sum(Order.total)).scalar() or 0.0
-        products_count = Product.query.count()
-        users_count = User.query.count()
-        return render_template("admin/dashboard.html",
-                               total_orders=total_orders, total_sales=total_sales,
-                               products_count=products_count, users_count=users_count)
-
-    @app.get("/admin/productos")
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_products():
-        products = Product.query.order_by(Product.created_at.desc()).all()
-        return render_template("admin/products.html", products=products)
-
-    @app.route("/admin/productos/nuevo", methods=["GET", "POST"])
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_product_new():
-        form = ProductForm()
-        form.category_id.choices = [(0, "Sin categoría")] + [(c.id, c.name) for c in Category.query.all()]
-        if form.validate_on_submit():
-            category_id = form.category_id.data or None
-            if category_id == 0:
-                category_id = None
-            p = Product(
-                name=form.name.data.strip(),
-                description=form.description.data.strip() if form.description.data else None,
-                price=form.price.data,
-                stock=form.stock.data,
-                category_id=category_id,
-                image_url=form.image_url.data or None
-            )
-            db.session.add(p)
-            db.session.commit()
-            flash("Producto creado.", "success")
-            return redirect(url_for("admin_products"))
-        return render_template("admin/product_form.html", form=form, action="Nuevo")
-
-    @app.route("/admin/productos/<int:product_id>/editar", methods=["GET", "POST"])
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_product_edit(product_id):
-        p = db.session.get(Product, product_id)
-        if not p:
-            abort(404)
-        form = ProductForm(obj=p)
-        form.category_id.choices = [(0, "Sin categoría")] + [(c.id, c.name) for c in Category.query.all()]
-        if request.method == "GET":
-            form.category_id.data = p.category_id or 0
-        if form.validate_on_submit():
-            p.name = form.name.data.strip()
-            p.description = form.description.data.strip() if form.description.data else None
-            p.price = form.price.data
-            p.stock = form.stock.data
-            p.category_id = form.category_id.data or None
-            if p.category_id == 0:
-                p.category_id = None
-            p.image_url = form.image_url.data or None
-            db.session.commit()
-            flash("Producto actualizado.", "success")
-            return redirect(url_for("admin_products"))
-        return render_template("admin/product_form.html", form=form, action="Editar")
-
-    @app.post("/admin/productos/<int:product_id>/eliminar")
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_product_delete(product_id):
-        p = db.session.get(Product, product_id)
-        if not p:
-            abort(404)
-        db.session.delete(p)
-        db.session.commit()
-        flash("Producto eliminado.", "info")
-        return redirect(url_for("admin_products"))
-
-    @app.get("/admin/categorias")
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_categories():
-        categories = Category.query.order_by(Category.name.asc()).all()
-        return render_template("admin/categories.html", categories=categories)
-
-    @app.route("/admin/categorias/nueva", methods=["GET", "POST"])
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_category_new():
-        form = CategoryForm()
-        if form.validate_on_submit():
-            c = Category(name=form.name.data.strip())
-            db.session.add(c)
-            db.session.commit()
-            flash("Categoría creada.", "success")
-            return redirect(url_for("admin_categories"))
-        return render_template("admin/category_form.html", form=form, action="Nueva")
-
-    @app.route("/admin/categorias/<int:category_id>/editar", methods=["GET", "POST"])
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_category_edit(category_id):
-        c = db.session.get(Category, category_id)
-        if not c:
-            abort(404)
-        form = CategoryForm(obj=c)
-        if form.validate_on_submit():
-            c.name = form.name.data.strip()
-            db.session.commit()
-            flash("Categoría actualizada.", "success")
-            return redirect(url_for("admin_categories"))
-        return render_template("admin/category_form.html", form=form, action="Editar")
-
-    @app.post("/admin/categorias/<int:category_id>/eliminar")
-    @login_required
-    @role_required(Role.ADMIN)
-    def admin_category_delete(category_id):
-        c = db.session.get(Category, category_id)
-        if not c:
-            abort(404)
-        db.session.delete(c)
-        db.session.commit()
-        flash("Categoría eliminada.", "info")
-        return redirect(url_for("admin_categories"))
-
     return app
 
+
+# ------------- MAIN ENTRY POINT -------------
 if __name__ == "__main__":
     app = create_app()
-    app.run(debug=True, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
-    
-if __name__ == "__main__":
-    app = create_app()
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
 else:
     app = create_app()
