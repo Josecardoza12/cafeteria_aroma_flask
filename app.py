@@ -8,6 +8,7 @@ from utils import role_required
 from seed_data import seed_db
 
 
+
 # Inicialización de extensiones
 csrf = CSRFProtect()
 login_manager = LoginManager()
